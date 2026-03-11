@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{layout/main}">
+<head>
+<title>貸出管理 - LaughTale</title>
+<style>
+.overdue-row {
+	background-color: rgba(239, 68, 68, 0.05) !important;
+}
+
+.overdue-text {
+	color: var(--danger-color);
+	font-weight: bold;
+}
+</style>
+</head>
+<body>
+	<th:block layout:fragment="content">
+		<div class="container py-4">
+			<div class="d-flex justify-content-between align-items-center mb-4">
+				<h3 class="fw-bold">
+					<i class="bi bi-journal-check me-2 text-primary"></i>貸出管理
+				</h3>
+
+				<form method="get" th:action="@{/admin/rentals}"
+					class="d-flex gap-2">
+					<select name="status" class="form-select border-0 shadow-sm"
+						style="width: 180px;" onchange="this.form.submit()">
+						<option value="">全ステータス表示</option>
+						<option value="RENTED" th:selected="${status == 'RENTED'}">🔹
+							貸出中</option>
+						<option value="OVERDUE" th:selected="${status == 'OVERDUE'}">⚠️
+							延滞管理</option>
+						<option value="RETURNED" th:selected="${status == 'RETURNED'}">✅
+							返却済み</option>
+					</select>
+				</form>
+			</div>
+
+			<div th:if="${message}"
+				class="alert alert-success alert-dismissible fade show shadow-sm"
+				role="alert">
+				<i class="bi bi-check-circle-fill me-2"></i> <span
+					th:text="${message}"></span>
+				<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+			</div>
+
+			<div class="card border-0 shadow-sm">
+				<div class="table-responsive">
+					<table class="table table-hover align-middle mb-0">
+						<thead class="table-light">
+							<tr>
+								<th class="ps-4">会員</th>
+								<th>タイトル</th>
+								<th>貸出日</th>
+								<th>返却予定日</th>
+								<th>ステータス</th>
+								<th class="text-center pe-4">管理</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr th:each="rental : ${rentals.content}"
+								th:classappend="${rental.status == 'OVERDUE'} ? 'overdue-row' : ''">
+								<td class="ps-4">
+									<div class="fw-bold" th:text="${rental.member.name}"></div>
+									<small class="text-muted" th:text="${rental.member.email}"></small>
+								</td>
+								<td>
+									<div class="text-truncate" style="max-width: 250px;"
+										th:text="${rental.book.title}">タイトル</div>
+								</td>
+								<td
+									th:text="${#temporals.format(rental.rentalDate, 'yyyy-MM-dd')}"></td>
+								<td><span
+									th:text="${#temporals.format(rental.dueDate, 'yyyy-MM-dd')}"></span>
+									<i th:if="${rental.status == 'OVERDUE'}"
+									class="bi bi-exclamation-circle-fill text-danger ms-1"></i></td>
+								<td><span class="badge"
+									th:classappend="${rental.status == 'RENTED'} ? 'bg-primary' : (${rental.status == 'RETURNED'} ? 'bg-success' : 'bg-danger')"
+									th:text="${rental.status == 'RENTED'} ? '貸出中' : (${rental.status == 'RETURNED'} ? '返却済み' : '延滞')">
+								</span>
+									<div th:if="${rental.status == 'OVERDUE'}"
+										class="overdue-text small mt-1">
+										<span th:text="${rental.overdueDays}"></span>日経過
+									</div></td>
+								<td class="text-center pe-4">
+									<button th:if="${rental.status != 'RETURNED'}"
+										class="btn btn-sm btn-outline-primary rounded-pill px-3"
+										th:onclick="'returnBook(' + ${rental.rentalId} + ')'">
+										返却処理</button> <span th:if="${rental.status == 'RETURNED'}"
+									class="text-muted small"> <i class="bi bi-check-all"></i>
+										完了
+								</span>
+								</td>
+							</tr>
+
+							<tr th:if="${rentals.content.empty}">
+								<td colspan="6" class="text-center text-muted py-5"><i
+									class="bi bi-inbox fs-1 d-block mb-3"></i> 該当する貸出履歴はありません。</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			<nav th:if="${rentals.totalPages > 1}" class="mt-4">
+				<ul class="pagination justify-content-center">
+					<li class="page-item"
+						th:classappend="${!rentals.hasPreviousPage()} ? 'disabled'">
+						<a class="page-link shadow-sm"
+						th:href="@{/admin/rentals(page=${rentals.number - 1}, status=${status})}">
+							<i class="bi bi-chevron-left"></i>
+					</a>
+					</li>
+					<li class="page-item"
+						th:each="i : ${#numbers.sequence(0, rentals.totalPages - 1)}"
+						th:classappend="${i == rentals.number} ? 'active'"><a
+						class="page-link shadow-sm"
+						th:href="@{/admin/rentals(page=${i}, status=${status})}"
+						th:text="${i + 1}"></a></li>
+					<li class="page-item"
+						th:classappend="${!rentals.hasNextPage()} ? 'disabled'"><a
+						class="page-link shadow-sm"
+						th:href="@{/admin/rentals(page=${rentals.number + 1}, status=${status})}">
+							<i class="bi bi-chevron-right"></i>
+					</a></li>
+				</ul>
+			</nav>
+		</div>
+	</th:block>
+
+	<th:block layout:fragment="scripts">
+		<script th:inline="javascript">
+            function returnBook(rentalId) {
+                if (confirm('この書籍を返却処理しますか？')) {
+                    showLoading();
+                    $.post('/admin/rentals/' + rentalId + '/return')
+                        .done(function() {
+                            showToast('返却処理が完了しました。');
+                            location.reload();
+                        })
+                        .fail(function() {
+                            showToast('処理に失敗しました。', 'error');
+                        })
+                        .always(hideLoading);
+                }
+            }
+        </script>
+	</th:block>
+</body>
+</html>

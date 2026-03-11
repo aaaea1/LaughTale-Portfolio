@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{layout/main}">
+<head>
+<title>管理者ダッシュボード - LaughTale</title>
+</head>
+<th:block layout:fragment="content">
+	<h1 class="mb-4">
+		<i class="bi bi-speedometer2"></i> 管理者ダッシュボード
+	</h1>
+	<div class="row mb-4">
+		<div class="col-md-3">
+			<div class="card">
+				<div class="card-body text-center">
+					<h3 th:text="${dashboard.totalMembers}">0</h3>
+					<p>総会員数</p>
+				</div>
+			</div>
+		</div>
+		<div class="col-md-3">
+			<div class="card">
+				<div class="card-body text-center">
+					<h3 th:text="${dashboard.totalBooks}">0</h3>
+					<p>総書籍数</p>
+				</div>
+			</div>
+		</div>
+		<div class="col-md-3">
+			<div class="card">
+				<div class="card-body text-center">
+					<h3 th:text="${dashboard.currentRentals}">0</h3>
+					<p>貸出中</p>
+				</div>
+			</div>
+		</div>
+		<div class="col-md-3">
+			<div class="card">
+				<div class="card-body text-center">
+					<h3 th:text="${dashboard.overdueRentals}">0</h3>
+					<p>延滞</p>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="card-header">
+			<h5>人気書籍TOP10</h5>
+		</div>
+		<div class="card-body">
+			<div th:each="b, iterStat : ${popularBooks}"
+				class="d-flex justify-content-between border-bottom py-2">
+				<div>
+					<span class="badge bg-primary" th:text="${iterStat.count}">1</span>
+					<span th:text="${b.title}">書籍タイトル</span>
+				</div>
+				<span class="text-muted" th:text="${b.rentalCount + '回'}">0回</span>
+			</div>
+
+			<div th:if="${#lists.isEmpty(popularBooks)}"
+				class="text-center py-3 text-muted">データがありません。</div>
+		</div>
+	</div>
+</th:block>
+<th:block layout:fragment="scripts">
+</th:block>
+</html>

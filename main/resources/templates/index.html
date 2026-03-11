@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{layout/main}">
+
+<head>
+<title>LaughTale - home</title>
+</head>
+<body>
+	<th:block layout:fragment="content">
+		<div
+			class="p-5 mb-5 rounded-3 shadow text-white animate__animated animate__fadeIn"
+			style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));">
+			<div class="container-fluid py-5 text-center">
+				<h1 class="display-5 fw-bold">
+					<i class="bi bi-stars me-2"></i>あなたにぴったりのマンガを見つけよう。
+				</h1>
+				<a href="/books"
+					class="btn btn-light btn-lg px-4 mt-3 fw-bold text-primary">書籍一覧を見る</a>
+			</div>
+		</div>
+
+		<section class="mb-5 animate__animated animate__fadeInUp">
+			<div class="d-flex justify-content-between align-items-center mb-4">
+				<h3 class="fw-bold">
+					<i class="bi bi-fire text-danger me-2"></i>今話題の人気マンガ
+				</h3>
+				<a href="/books?sort=popular"
+					class="text-decoration-none text-muted small">もっと見る<i
+					class="bi bi-chevron-right"></i></a>
+			</div>
+			<div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-4">
+				<div class="col" th:each="book, iterStat : ${popularBooks}" th:if="${iterStat.index < 4}">
+				<a th:href="@{/books/detail(id=${book.bookId})}" class="text-decoration-none text-dark">
+					<div class="card h-100 border-0 shadow-sm">
+						<div class="position-relative">
+							<img th:src="${book.filePath ?: '/images/no-cover.png'}"
+								class="card-img-top book-cover" alt="マンガ表紙"> <span
+								class="position-absolute top-0 start-0 m-2 badge bg-danger shadow">BEST</span>
+						</div>
+						<div class="card-body">
+							<h6 class="card-title fw-bold text-truncate"
+								th:text="${book.title}">タイトル</h6>
+							<p class="card-text small text-muted mb-2"
+								th:text="${book.author}">著者名</p>
+							<div class="d-flex justify-content-between align-items-center">
+								<span class="badge bg-primary-subtle text-primary small"
+									th:text="${book.genre}">ジャンル</span> <small class="text-warning"><i
+									class="bi bi-star-fill"></i> <span
+									th:text="${book.rentalCount}">0</span></small>
+							</div>
+						</div>
+					</div>
+					</a>
+				</div>
+			</div>
+		</section>
+
+		<section class="mb-5 animate__animated animate__fadeInUp"
+			style="animation-delay: 0.2s;">
+			<div class="d-flex justify-content-between align-items-center mb-4">
+				<h3 class="fw-bold">
+					<i class="bi bi-clock-history text-primary me-2"></i>新着マンガ
+				</h3>
+				<a href="/books?sort=newest"
+					class="text-decoration-none text-muted small">もっと見る<i
+					class="bi bi-chevron-right"></i></a>
+			</div>
+			<div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-4">
+				<div class="col" th:each="book, iterStat : ${recentBooks}" th:if="${iterStat.index < 4}">
+				<a th:href="@{/books/detail(id=${book.bookId})}" class="text-decoration-none text-dark">
+					<div class="card h-100 border-0 shadow-sm">
+						<img th:src="${book.filePath ?: '/images/no-cover.png'}"
+							class="card-img-top book-cover" alt="マンガ表紙">
+						<div class="card-body">
+							<h6 class="card-title fw-bold text-truncate"
+								th:text="${book.title}">タイトル</h6>
+							<p class="card-text small text-muted mb-2"
+								th:text="${book.author}">著者名</p>
+							<span class="badge bg-secondary-subtle text-secondary small"
+								th:text="${book.genre}">ジャンル</span>
+						</div>
+					</div>
+					</a>
+				</div>
+				<div class="col-12 text-center py-5"
+					th:if="${recentBooks == null or recentBooks.empty}">
+					<p class="text-muted">登録されたマンガはありません。</p>
+				</div>
+			</div>
+		</section>
+	</th:block>
+</body>
+</html>

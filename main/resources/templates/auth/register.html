@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>会員登録 - LaughTale</title>
+<link
+	href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+	rel="stylesheet">
+<link rel="stylesheet"
+	href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<style>
+body {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	min-height: 100vh;
+	padding: 2rem 0;
+}
+
+.register-card {
+	background: white;
+	border-radius: 20px;
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+	overflow: hidden;
+	max-width: 500px;
+	margin: 0 auto;
+}
+
+.register-header {
+	background: linear-gradient(135deg, #6366f1, #8b5cf6);
+	color: white;
+	padding: 2rem;
+	text-align: center;
+}
+
+.register-body {
+	padding: 2rem;
+}
+
+.form-control:focus {
+	border-color: #6366f1;
+	box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25);
+}
+
+.btn-register {
+	background: linear-gradient(135deg, #6366f1, #8b5cf6);
+	border: none;
+	padding: 0.75rem;
+	font-weight: 600;
+}
+
+.btn-register:hover {
+	background: linear-gradient(135deg, #5558d9, #7c4dbd);
+}
+
+.validation-message {
+	font-size: 0.875rem;
+	margin-top: 0.25rem;
+}
+</style>
+</head>
+<body>
+	<div class="container">
+		<div class="register-card">
+			<div class="register-header">
+				<h2 class="mb-0">
+					<i class="bi bi-book-fill"></i> LaughTale
+				</h2>
+				<p class="mb-0 mt-2">会員登録</p>
+			</div>
+
+			<div class="register-body">
+				<!-- Error Message -->
+				<div th:if="${error}" class="alert alert-danger" role="alert">
+					<i class="bi bi-exclamation-triangle-fill"></i> <span
+						th:text="${error}"></span>
+				</div>
+
+				<form th:action="@{/register}" method="post" th:object="${member}"
+					id="registerForm">
+					<div class="mb-3">
+						<label for="username" class="form-label"> <i
+							class="bi bi-person"></i> ユーザーID *
+						</label> <input type="text" class="form-control" id="username"
+							th:field="*{username}" placeholder="ユーザーID（4文字以上）" required>
+						<div class="validation-message text-danger" id="usernameError"></div>
+					</div>
+
+					<div class="mb-3">
+						<label for="password" class="form-label"> <i
+							class="bi bi-lock"></i> パスワード*
+						</label> <input type="password" class="form-control" id="password"
+							th:field="*{password}" placeholder="パスワード（4文字以上）" required>
+						<div class="validation-message text-danger" id="passwordError"></div>
+					</div>
+
+					<div class="mb-3">
+						<label for="passwordConfirm" class="form-label"> <i
+							class="bi bi-lock-fill"></i> パスワード確認 *
+						</label> <input type="password" class="form-control" id="passwordConfirm"
+							placeholder="パスワードを再入力" required>
+						<div class="validation-message text-danger"
+							id="passwordConfirmError"></div>
+					</div>
+
+					<div class="mb-3">
+						<label for="name" class="form-label"> <i
+							class="bi bi-person-badge"></i> 氏名 *
+						</label> <input type="text" class="form-control" id="name"
+							th:field="*{name}" placeholder="氏名" required>
+					</div>
+
+					<div class="mb-3">
+						<label for="email" class="form-label"> <i
+							class="bi bi-envelope"></i> メールアドレス *
+						</label> <input type="email" class="form-control" id="email"
+							th:field="*{email}" placeholder="example@email.com" required>
+						<div class="validation-message text-danger" id="emailError"></div>
+					</div>
+
+					<div class="mb-3">
+						<label for="phone" class="form-label"> <i
+							class="bi bi-telephone"></i> 電話番号
+						</label> <input type="tel" class="form-control" id="phone"
+							th:field="*{phone}" placeholder="010-1234-5678">
+					</div>
+
+					<button type="submit"
+						class="btn btn-primary btn-register w-100 mb-3">
+						<i class="bi bi-person-plus-fill"></i> 会員登録
+					</button>
+
+					<div class="text-center">
+						<p class="mb-0">
+							すでにアカウントをお持ちの方は <a href="/login"
+								class="text-decoration-none fw-bold">ログイン</a>
+						</p>
+						<p class="mt-2">
+							<a href="/" class="text-muted text-decoration-none"> <i
+								class="bi bi-house"></i>戻る
+							</a>
+						</p>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+
+	<script
+		src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+	<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+	<script>
+    $(document).ready(function() {
+        const form = $('#registerForm');
+        const username = $('#username');
+        const password = $('#password');
+        const passwordConfirm = $('#passwordConfirm');
+        const email = $('#email');
+        
+        // 실시간 유효성 검사
+        username.on('blur', function() {
+            const value = $(this).val();
+            if (value.length < 4) {
+                $('#usernameError').text('ユーザーIDは4文字以上で入力してください。');
+                $(this).addClass('is-invalid');
+            } else {
+                $('#usernameError').text('');
+                $(this).removeClass('is-invalid').addClass('is-valid');
+            }
+        });
+        
+        password.on('blur', function() {
+            const value = $(this).val();
+            if (value.length < 4) {
+                $('#passwordError').text('パスワードは4文字以上で入力してください。');
+                $(this).addClass('is-invalid');
+            } else {
+                $('#passwordError').text('');
+                $(this).removeClass('is-invalid').addClass('is-valid');
+            }
+        });
+        
+        passwordConfirm.on('keyup blur', function() {
+            const value = $(this).val();
+            if (value !== password.val()) {
+                $('#passwordConfirmError').text('パスワードが一致しません。');
+                $(this).addClass('is-invalid');
+            } else {
+                $('#passwordConfirmError').text('');
+                $(this).removeClass('is-invalid').addClass('is-valid');
+            }
+        });
+        
+        email.on('blur', function() {
+            const value = $(this).val();
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailPattern.test(value)) {
+                $('#emailError').text('正しいメールアドレスの形式で入力してください。');
+                $(this).addClass('is-invalid');
+            } else {
+                $('#emailError').text('');
+                $(this).removeClass('is-invalid').addClass('is-valid');
+            }
+        });
+        
+        // 폼 제출 시 유효성 검사
+        form.on('submit', function(e) {
+            let isValid = true;
+            
+            if (username.val().length < 4) {
+                $('#usernameError').text('ユーザーIDは4文字以上で入力してください。');
+                isValid = false;
+            }
+            
+            if (password.val().length < 4) {
+                $('#passwordError').text('パスワードは4文字以上で入力してください。');
+                isValid = false;
+            }
+            
+            if (password.val() !== passwordConfirm.val()) {
+                $('#passwordConfirmError').text('パスワードが一致しません。');
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+            }
+        });
+    });
+    </script>
+</body>
+</html>

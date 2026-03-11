@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{layout/main}">
+<head>
+<title>書籍登録／編集 - LaughTale</title>
+</head>
+<th:block layout:fragment="content">
+	<h1 class="mb-4">
+		<i class="bi bi-plus-circle"></i> 書籍登録／編集
+	</h1>
+	<div class="card">
+		<div class="card-body">
+			<form th:action="@{/admin/books}" th:object="${book}" method="post"
+				enctype="multipart/form-data">
+				<input type="hidden" th:field="*{bookId}">
+				<input type="hidden" th:field="*{filePath}">
+
+				<div class="row">
+					<div class="col-md-6">
+						<div class="mb-3">
+							<label>タイトル *</label> <input type="text" class="form-control"
+								th:field="*{title}" required>
+						</div>
+						<div class="mb-3">
+							<label>著者名 *</label> <input type="text" class="form-control"
+								th:field="*{author}" required>
+						</div>
+						<div class="mb-3">
+							<label>出版社</label> <input type="text" class="form-control"
+								th:field="*{publisher}">
+						</div>
+						<div class="mb-3">
+							<label>ジャンル</label> <select class="form-select"
+								th:field="*{genre}">
+								<option value="">ジャンル</option>
+								<option th:each="g : ${genres}" th:value="${g}" th:text="${g}">장르명</option>
+							</select>
+						</div>
+					</div>
+					<div class="col-md-6">
+						<div class="mb-3">
+							<label>ISBN</label> <input type="text" class="form-control"
+								th:field="*{isbn}">
+						</div>
+						<div class="mb-3">
+							<label>総巻数</label> <input type="number" class="form-control"
+								th:field="*{totalCopies}">
+						</div>
+						<div class="mb-3">
+							<label>表紙画像</label> 
+							
+							<input type="file" class="form-control"
+								name="file" accept="image/*">
+						</div>
+						<div class="mb-3">
+							<label>あらすじ</label>
+							<textarea class="form-control" th:field="*{description}" rows="4"></textarea>
+						</div>
+					</div>
+				</div>
+				<button type="submit" class="btn btn-primary">
+					<i class="bi bi-save"></i> 保存
+				</button>
+				<a href="/admin/books" class="btn btn-secondary">キャンセル </a>
+			</form>
+		</div>
+	</div>
+</th:block>
+<th:block layout:fragment="scripts">
+	<script>
+$('#bookForm').submit(function(e) {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append('title', $('#title').val());
+    formData.append('author', $('#author').val());
+    formData.append('publisher', $('#publisher').val());
+    formData.append('genre', $('#genre').val());
+    formData.append('isbn', $('#isbn').val());
+    formData.append('totalCopies', $('#totalCopies').val());
+    formData.append('description', $('#description').val());
+    if($('#coverImage')[0].files[0]) formData.append('file', $('#coverImage')[0].files[0]);
+    showLoading();
+    $.ajax({url:'/admin/books',method:'POST',data:formData,processData:false,contentType:false,
+        success:() => { hideLoading(); showToast('保存完了'); setTimeout(() => location.href='/admin/books', 1000); },
+        error:() => { hideLoading(); showToast('保存失敗', 'error'); }
+    });
+});
+</script>
+</th:block>
+</html>

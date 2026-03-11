@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ログイン - LaughTale</title>
+<link
+	href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+	rel="stylesheet">
+<link rel="stylesheet"
+	href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<style>
+body {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	min-height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.login-card {
+	background: white;
+	border-radius: 20px;
+	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+	overflow: hidden;
+	max-width: 400px;
+	width: 100%;
+}
+
+.login-header {
+	background: linear-gradient(135deg, #6366f1, #8b5cf6);
+	color: white;
+	padding: 2rem;
+	text-align: center;
+}
+
+.login-body {
+	padding: 2rem;
+}
+
+.form-control:focus {
+	border-color: #6366f1;
+	box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.25);
+}
+
+.btn-login {
+	background: linear-gradient(135deg, #6366f1, #8b5cf6);
+	border: none;
+	padding: 0.75rem;
+	font-weight: 600;
+}
+
+.btn-login:hover {
+	background: linear-gradient(135deg, #5558d9, #7c4dbd);
+}
+</style>
+</head>
+<body>
+	<div class="login-card">
+		<div class="login-header">
+			<h2 class="mb-0">
+				<i class="bi bi-book-fill"></i> LaughTale
+			</h2>
+			<p class="mb-0 mt-2">ログイン</p>
+		</div>
+
+		<div class="login-body">
+			<!-- Error Message -->
+			<div th:if="${param.error}" class="alert alert-danger" role="alert">
+				<i class="bi bi-exclamation-triangle-fill"></i> ーザーIDまたはパスワードが正しくありません。
+			</div>
+
+			<!-- Success Message -->
+			<div th:if="${message}" class="alert alert-success" role="alert">
+				<i class="bi bi-check-circle-fill"></i> <span th:text="${message}"></span>
+			</div>
+
+			<form th:action="@{/login}" method="post">
+				<div class="mb-3">
+					<label for="username" class="form-label"> <i
+						class="bi bi-person"></i> ユーザーID
+					</label> <input type="text" class="form-control" id="username"
+						name="username" placeholder="ユーザーIDを入力してください。" required autofocus>
+				</div>
+
+				<div class="mb-3">
+					<label for="password" class="form-label"> <i
+						class="bi bi-lock"></i> パスワード
+					</label> <input type="password" class="form-control" id="password"
+						name="password" placeholder="パスワードを入力してください。" required>
+				</div>
+
+				<div class="mb-3 form-check">
+					<input type="checkbox" class="form-check-input" id="remember-me"
+						name="remember-me"> <label class="form-check-label"
+						for="remember-me"> ログイン状態を保持 </label>
+				</div>
+
+				<button type="submit" class="btn btn-primary btn-login w-100 mb-3">
+					<i class="bi bi-box-arrow-in-right"></i> ログイン
+				</button>
+
+				<div class="text-center">
+					<p class="mb-0">
+						アカウントをお持ちでない方はこちら </p>
+						<a href="/register"
+							class="text-decoration-none fw-bold">会員登録</a>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<script
+		src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

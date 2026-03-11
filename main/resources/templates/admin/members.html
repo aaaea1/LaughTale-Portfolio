@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{layout/main}">
+<head>
+<title>会員管理 - LaughTale</title>
+</head>
+<th:block layout:fragment="content">
+	<h1 class="mb-4">
+		<i class="bi bi-people"></i> 会員管理
+	</h1>
+	<div class="card">
+		<div class="card-body">
+			<table class="table">
+				<thead>
+					<tr>
+						<th>ユーザーID</th>
+						<th>氏名</th>
+						<th>メールアドレス</th>
+						<th>ステータス</th>
+						<th>管理</th>
+					</tr>
+				</thead>
+				<tbody id="membersList">
+					<tr th:each="m : ${members.content}" th:if="${m.role != 'ADMIN'}">
+						<td th:text="${m.username}">ID</td>
+						<td th:text="${m.name}">氏名</td>
+						<td th:text="${m.email}">メール</td>
+						<td><span class="badge"
+							th:classappend="${m.status == 'ACTIVE' ? 'bg-success' : 'bg-danger'}"
+							th:text="${m.status}">STATUS</span></td>
+						<td>
+							<form th:action="@{/admin/members/{id}/status(id=${m.memberId})}"
+								method="post" style="display: inline;">
+								<input type="hidden" name="status" value="SUSPENDED">
+								<button type="submit" class="btn btn-sm btn-warning"
+									th:if="${m.status == 'ACTIVE'}"
+									onclick="return confirm('この会員を停止しますか？')">停止</button>
+							</form>
+
+							<form th:action="@{/admin/members/{id}/status(id=${m.memberId})}"
+								method="post" style="display: inline;">
+								<input type="hidden" name="status" value="ACTIVE">
+								<button type="submit" class="btn btn-sm btn-success"
+									th:if="${m.status == 'SUSPENDED'}"
+									onclick="return confirm('この会員を活性化しますか？')">活性化</button>
+							</form>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+</th:block>
+<th:block layout:fragment="scripts">
+</th:block>
+</html>

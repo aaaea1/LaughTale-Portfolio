@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{layout/main}">
+<head>
+<meta name="_csrf" th:content="${_csrf.token}" />
+<meta name="_csrf_header" th:content="${_csrf.headerName}" />
+<title th:text="${book.title} + ' - LaughTale'">書籍詳細</title>
+</head>
+
+<th:block layout:fragment="styles">
+	<style>
+.book-detail-img {
+	width: 100%;
+	max-width: 400px;
+	border-radius: 15px;
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.rating-display {
+	font-size: 1.5rem;
+}
+
+.review-card {
+	border-left: 4px solid var(--primary-color);
+	margin-bottom: 1rem;
+	transition: all 0.3s;
+}
+
+.review-card:hover {
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.star-rating {
+	display: inline-flex;
+	flex-direction: row-reverse;
+	font-size: 2.5rem;
+	unicode-bidi: bidi-override;
+	direction: rtl;
+}
+
+.star-rating input {
+	display: none;
+}
+
+.star-rating label {
+	cursor: pointer;
+	color: #ddd;
+	transition: color 0.2s;
+	margin: 0 0.1rem;
+}
+
+.star-rating label:hover, .star-rating label:hover ~ label, .star-rating input:checked 
+	 ~ label {
+	color: #ffc107;
+}
+
+.info-table th {
+	width: 150px;
+	color: #6c757d;
+}
+
+.action-buttons .btn {
+	min-width: 150px;
+}
+</style>
+</th:block>
+
+<th:block layout:fragment="content">
+	<input type="hidden" id="bookId" th:value="${book.bookId}">
+
+	<div class="row mb-5">
+		<div class="col-md-4 mb-4 animate__animated animate__fadeInLeft">
+			<img th:src="@{'/' + ${book.filePath}}" th:alt="${book.title}"
+				class="book-detail-img"
+				onerror="this.src='https://via.placeholder.com/400x600?text=No+Image'">
+		</div>
+
+		<div class="col-md-8 animate__animated animate__fadeInRight">
+			<h1 class="fw-bold mb-3" th:text="${book.title}">書籍タイトル</h1>
+			<div class="mb-3">
+				<span class="badge bg-primary fs-6" th:text="${book.genre}">ジャンル</span>
+			</div>
+			<table class="table table-borderless info-table">
+				<tr>
+					<th><i class="bi bi-person"></i> 著者</th>
+					<td th:text="${book.author}">著者名</td>
+				</tr>
+				<tr>
+					<th><i class="bi bi-building"></i> 出版社</th>
+					<td th:text="${book.publisher}">出版社</td>
+				</tr>
+				<tr>
+					<th><i class="bi bi-upc-scan"></i> ISBN</th>
+					<td th:text="${book.isbn}">ISBN</td>
+				</tr>
+				<tr>
+					<th><i class="bi bi-star-fill text-warning"></i> 評価</th>
+					<td><span class="rating-display" id="starsDisplay"></span> <strong
+						id="averageRating">0.0</strong> <span class="text-muted"
+						id="reviewCount">(レビュー0件)</span></td>
+				</tr>
+				<tr>
+					<th><i class="bi bi-box"></i> 在庫</th>
+					<td><strong><span id="availableCopies"
+							th:text="${book.availableCopies}">0</span></strong> / <span
+						th:text="${book.totalCopies}">0</span> <span
+						id="availabilityBadge" class="ms-2"></span></td>
+				</tr>
+			</table>
+			<div class="mb-4">
+				<h5>
+					<i class="bi bi-file-text"></i> あらすじ
+				</h5>
+				<p th:text="${book.description}" class="text-muted">あらすじ</p>
+			</div>
+
+			<div class="action-buttons d-grid gap-2 d-md-flex"
+				sec:authorize="hasRole('USER')">
+				<button class="btn btn-primary btn-lg" id="rentBtn"
+					onclick="rentBook()" style="display: none;">
+					<i class="bi bi-cart-plus"></i> 借りる
+				</button>
+				<button class="btn btn-warning btn-lg" id="reserveBtn"
+					onclick="reserveBook()" style="display: none;">
+					<i class="bi bi-bookmark-plus"></i> 予約する
+				</button>
+				<button class="btn btn-outline-secondary btn-lg"
+					onclick="history.back()">
+					<i class="bi bi-arrow-left"></i> 一覧へ戻る
+				</button>
+			</div>
+			<div id="waitingInfo" class="alert alert-info mt-3"
+				style="display: none;">
+				<i class="bi bi-people"></i> 現在 <strong><span
+					id="waitingCount">0</span>名</strong>が予約待ちです。
+			</div>
+		</div>
+	</div>
+
+	<hr class="my-5">
+
+	<div class="row">
+		<div class="col-12">
+			<h3 class="fw-bold mb-4">
+				<i class="bi bi-chat-left-text"></i> レビュー <span
+					class="badge bg-primary" id="totalReviews">0</span>
+			</h3>
+
+			<div class="card mb-4 animate__animated animate__fadeIn"
+				sec:authorize="hasRole('USER')" id="reviewFormCard">
+				<div class="card-body">
+					<h5 class="card-title">レビューを書く</h5>
+					<form id="reviewForm">
+						<div class="mb-3">
+							<label class="form-label fw-bold">評価 *</label>
+							<div class="star-rating" id="starRating">
+								<input type="radio" name="rating" value="5" id="star5"><label
+									for="star5">★</label> <input type="radio" name="rating"
+									value="4" id="star4"><label for="star4">★</label> <input
+									type="radio" name="rating" value="3" id="star3"><label
+									for="star3">★</label> <input type="radio" name="rating"
+									value="2" id="star2"><label for="star2">★</label> <input
+									type="radio" name="rating" value="1" id="star1"><label
+									for="star1">★</label>
+							</div>
+						</div>
+						<div class="mb-3">
+							<label for="reviewContent" class="form-label fw-bold">レビュー内容
+								*</label>
+							<textarea class="form-control" id="reviewContent" rows="4"
+								placeholder="この作品の感想を共有してください。" required></textarea>
+						</div>
+						<button type="submit" class="btn btn-primary">
+							<i class="bi bi-send"></i> レビューを投稿
+						</button>
+					</form>
+				</div>
+			</div>
+
+			<input type="hidden" id="currentMemberId"
+				th:value="${#authentication != null ? #authentication.principal.memberId : ''}">
+
+			<input type="hidden" id="isAdmin"
+				th:value="${#authorization.expression('hasRole(''ADMIN'')')}">
+
+			<div id="reviewsList"></div>
+		</div>
+	</div>
+</th:block>
+
+<th:block layout:fragment="scripts">
+	<script>
+const bookId = $('#bookId').val();
+const currentMemberId = parseInt($('#currentMemberId').val()) || 0; 
+
+$(document).ready(function() {
+    updateBookInfo();
+    updateRating();
+    updateWaitingCount();
+    loadReviews();
+
+    // 초기 바인딩: 신규 등록 모드
+    bindSubmitEvent(submitReview);
+});
+
+// 이벤트 바인딩 전용 함수 (중복 방지)
+function bindSubmitEvent(callback) {
+    $('#reviewForm').off('submit').on('submit', function(e) {
+        e.preventDefault();
+        callback();
+    });
+}
+
+function updateBookInfo() {
+    const availableCopies = parseInt($('#availableCopies').text());
+    if (availableCopies > 0) {
+        $('#availabilityBadge').html('<span class="badge bg-success">貸出可能</span>');
+        $('#rentBtn').show();
+    } else {
+        $('#availabilityBadge').html('<span class="badge bg-danger">貸出中</span>');
+        $('#reserveBtn').show();
+    }
+}
+
+function updateRating() {
+    $.get(`/api/books/${bookId}/rating`, function(response) {
+        if (response.success) {
+            const rating = response.averageRating || 0;
+            $('#averageRating').text(rating.toFixed(1));
+            $('#reviewCount').text(`(${response.reviewCount}件)`);
+            $('#totalReviews').text(response.reviewCount);
+            
+            let starsHtml = '';
+            for (let i = 1; i <= 5; i++) {
+                if (i <= Math.floor(rating)) starsHtml += '<i class="bi bi-star-fill text-warning"></i>';
+                else if (i === Math.ceil(rating) && (rating % 1) >= 0.5) starsHtml += '<i class="bi bi-star-half text-warning"></i>';
+                else starsHtml += '<i class="bi bi-star text-warning"></i>';
+            }
+            $('#starsDisplay').html(starsHtml);
+        }
+    });
+}
+
+function updateWaitingCount() {
+    $.get(`/api/books/${bookId}/waiting-count`, function(response) {
+        if (response.success && response.waitingCount > 0) {
+            $('#waitingInfo').show();
+            $('#waitingCount').text(response.waitingCount);
+        }
+    });
+}
+
+function rentBook() {
+    if (!confirm('この書籍を貸し出しますか？')) return;
+    const token = $("meta[name='_csrf']").attr("content");
+    const header = $("meta[name='_csrf_header']").attr("content");
+    $.ajax({
+        url: '/api/rentals',
+        method: 'POST',
+        contentType: 'application/json',
+        beforeSend: xhr => { if (header && token) xhr.setRequestHeader(header, token); },
+        data: JSON.stringify({ bookId: parseInt(bookId) }),
+        success: response => { showToast(response.message, 'success'); setTimeout(() => location.href = '/user/rentals', 1200); },
+        error: xhr => showToast(xhr.responseJSON?.message || '貸出に失敗しました。', 'error')
+    });
+}
+
+//스크립트 상단 변수 선언부에 추가
+const isAdmin = $('#isAdmin').val() === 'true'; // 문자열 'true'를 불리언으로 변환
+
+function loadReviews() {
+    $.get(`/api/books/${bookId}/reviews`).done(function(reviews) {
+        const reviewsHtml = reviews.map(r => {
+            const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+            let actionButtons = '';
+            
+            // 조건 수정: (내 리뷰인 경우) 또는 (관리자인 경우)
+            const isOwner = currentMemberId !== 0 && currentMemberId === parseInt(r.memberId);
+            
+            if (isOwner || isAdmin) {
+                const safeContent = r.content.replace(/`/g, '\\`').replace(/\n/g, '\\n');
+                
+                actionButtons = `<div class="mt-2 text-end">`;
+                
+                // 수정 버튼은 '작성자'에게만 노출 (관리자라도 남의 글 수정은 보통 안 함)
+                if (isOwner) {
+                    actionButtons += `<button class="btn btn-sm btn-outline-secondary me-1" onclick="editMode(${r.reviewId}, \`${safeContent}\`, ${r.rating})">編集</button>`;
+                }
+                
+                // 삭제 버튼은 '작성자' 또는 '관리자' 모두에게 노출
+                actionButtons += `<button class="btn btn-sm btn-outline-danger" onclick="deleteReview(${r.reviewId})">削除</button>`;
+                actionButtons += `</div>`;
+            }
+
+            return `
+                <div class="review-card card mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <h6 class="fw-bold">${r.memberName} <small class="text-muted">${r.createdAt.substring(0,10)}</small></h6>
+                            <div class="text-warning">${stars}</div>
+                        </div>
+                        <p class="mb-1 text-dark">${r.content}</p>
+                        ${actionButtons}
+                    </div>
+                </div>`;
+        }).join('');
+        $('#reviewsList').html(reviewsHtml || '<p class="text-muted text-center py-4">レビューがありません。</p>');
+    });
+}
+
+function submitReview() {
+    const rating = $('input[name="rating"]:checked').val();
+    const content = $('#reviewContent').val().trim();
+    if (!rating || !content) return showToast('評価と内容を入力してください。', 'warning');
+
+    $.ajax({
+        url: '/api/reviews',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ bookId: parseInt(bookId), rating: parseInt(rating), content: content }),
+        success: response => {
+            showToast(response.message, 'success');
+            resetReviewForm();
+            loadReviews();
+            updateRating();
+        },
+        error: xhr => showToast(xhr.responseJSON?.message || '投稿に失敗しました。', 'error')
+    });
+}
+
+function editMode(id, content, rating) {
+    $('html, body').animate({ scrollTop: $("#reviewFormCard").offset().top - 100 }, 200);
+    $(`input[name="rating"][value="${rating}"]`).prop('checked', true);
+    $('#reviewContent').val(content);
+
+    const submitBtn = $('#reviewForm button[type="submit"]');
+    submitBtn.html('<i class="bi bi-check-lg"></i> レビューを更新');
+    
+    // 수정 모드로 이벤트 핸들러 변경
+    bindSubmitEvent(() => updateReview(id));
+
+    if ($('#cancelEditBtn').length === 0) {
+        submitBtn.after('<button type="button" id="cancelEditBtn" class="btn btn-outline-secondary ms-2" onclick="resetReviewForm()">キャンセル</button>');
+    }
+}
+
+function updateReview(id) {
+    const rating = $('input[name="rating"]:checked').val();
+    const content = $('#reviewContent').val().trim();
+    if (!rating || !content) return showToast('評価と内容を入力してください。', 'warning');
+
+    $.ajax({
+        url: `/api/reviews/${id}`,
+        method: 'PUT',
+        contentType: 'application/json',
+        data: JSON.stringify({ rating: parseInt(rating), content: content }),
+        success: response => {
+            showToast(response.message, 'success');
+            resetReviewForm();
+            loadReviews();
+            updateRating();
+        },
+        error: xhr => showToast(xhr.responseJSON?.message || '修正に失敗しました。', 'error')
+    });
+}
+
+function deleteReview(id) {
+    if(!confirm('本当に削除しますか？')) return;
+    $.ajax({
+        url: '/api/reviews/' + id,
+        method: 'DELETE',
+        success: () => { showToast('削除されました。', 'success'); loadReviews(); updateRating(); }
+    });
+}
+
+function resetReviewForm() {
+    $('#reviewForm')[0].reset();
+    $('#cancelEditBtn').remove();
+    $('#reviewForm button[type="submit"]').html('<i class="bi bi-send"></i> レビューを投稿');
+
+    bindSubmitEvent(submitReview);
+}
+
+function loadReviews() {
+    const isAdmin = $('#isAdmin').val() === 'true';
+
+    $.get(`/api/books/${bookId}/reviews`).done(function(reviews) {
+        const reviewsHtml = reviews.map(r => renderReviewItem(r, isAdmin)).join('');
+        $('#reviewsList').html(reviewsHtml || '<p class="text-muted text-center py-4">レビューはまだありません。</p>');
+    });
+}
+
+function renderReviewItem(r, isAdmin, isChild = false) {
+    const stars = '★'.repeat(r.rating || 0) + '☆'.repeat(5 - (r.rating || 0));
+    const isOwner = currentMemberId !== 0 && currentMemberId === parseInt(r.memberId);
+    
+    const safeContent = r.content.replace(/`/g, '\\`').replace(/\n/g, '\\n');
+    
+    // 수정/삭제 버튼 로직
+    let actionButtons = '';
+    if (isOwner || isAdmin) {
+        actionButtons = `<div class="mt-2 text-end">`;
+        if (isOwner) {
+            actionButtons += `<button class="btn btn-sm btn-outline-secondary me-1" onclick="editMode(${r.reviewId}, \`${safeContent}\`, ${r.rating})">編集</button>`;
+        }
+        actionButtons += `<button class="btn btn-sm btn-outline-danger" onclick="deleteReview(${r.reviewId})">削除</button>`;
+        actionButtons += `</div>`;
+    }
+
+    // 답글 버튼 
+    const replyBtn = (currentMemberId !== 0 && r.depth === 0) ? 
+        `<button class="btn btn-sm btn-link text-decoration-none p-0 text-muted" onclick="toggleReplyForm(${r.reviewId})">
+            <i class="bi bi-chat-dots"></i> 返信する
+         </button>` : '';
+
+    // 대댓글 목록 HTML 생성
+    const childrenHtml = r.children && r.children.length > 0 ? 
+        `<div class="ms-5 mt-3 border-start ps-3 bg-light p-2 rounded">
+            ${r.children.map(child => renderReviewItem(child, isAdmin, true)).join('')}
+        </div>` : '';
+
+    return `
+        <div class="review-card card mb-3 ${isChild ? 'border-0 shadow-none' : ''}">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="fw-bold mb-0">${r.memberName} 
+                        <small class="text-muted ms-2 fw-normal">${r.createdAt.substring(0,10)}</small>
+                    </h6>
+                    ${!isChild ? `<div class="text-warning small">${stars}</div>` : ''}
+                </div>
+                <p class="mb-1 text-dark">${r.content}</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    ${replyBtn}
+                    ${actionButtons}
+                </div>
+                <div id="replyContainer-${r.reviewId}" class="mt-2" style="display:none;">
+                    <div class="input-group">
+                        <textarea class="form-control" id="replyContent-${r.reviewId}" rows="2" placeholder="返信を入力してください。"></textarea>
+                        <button class="btn btn-primary" onclick="submitReply(${r.reviewId})">投稿</button>
+                    </div>
+                </div>
+                ${childrenHtml}
+            </div>
+        </div>`;
+}
+
+// 답글 폼 토글
+function toggleReplyForm(id) {
+    $(`#replyContainer-${id}`).toggle();
+    $(`#replyContent-${id}`).focus();
+}
+
+// 답글 등록 실행
+function submitReply(parentId) {
+    const content = $(`#replyContent-${parentId}`).val().trim();
+    if (!content) return showToast('内容を入力してください。', 'warning');
+
+    $.ajax({
+        url: '/api/reviews',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            bookId: parseInt(bookId),
+            parentId: parentId, 
+            content: content,
+            rating: 5, 
+            depth: 1
+        }),
+        success: response => {
+            showToast('返信が投稿されました。', 'success');
+            loadReviews();
+        },
+        error: xhr => showToast(xhr.responseJSON?.message || '失敗しました。', 'error')
+    });
+}
+
+function reserveBook() {
+    if (!confirm('この書籍を予約しますか？')) return;
+    
+    const token = $("meta[name='_csrf']").attr("content");
+    const header = $("meta[name='_csrf_header']").attr("content");
+    
+    $.ajax({
+        url: '/api/reservations', // 예약 API 경로 (실제 경로에 맞게 수정 필요)
+        method: 'POST',
+        contentType: 'application/json',
+        beforeSend: xhr => { 
+            if (header && token) xhr.setRequestHeader(header, token); 
+        },
+        data: JSON.stringify({ bookId: parseInt(bookId) }),
+        success: response => { 
+            showToast(response.message || '予約が完了しました。', 'success'); 
+            setTimeout(() => location.href = '/user/reservations', 1200);
+        },
+        error: xhr => {
+            showToast(xhr.responseJSON?.message || '失敗しました。', 'error');
+        }
+    });
+}
+
+</script>
+</th:block>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{layout/main}">
+<head>
+<title>マイ予約 - LaughTale</title>
+</head>
+<th:block layout:fragment="content">
+	<h1 class="mb-4">
+		<i class="bi bi-bookmark"></i> マイ予約一覧
+	</h1>
+
+	<div class="card-body">
+		<th:block
+			th:with="waitingCount=${#lists.isEmpty(reservations) ? 0 : #lists.size(reservations.?[status == 'WAITING'])}">
+
+			<div th:if="${waitingCount == 0}" class="text-center py-5">
+				<p class="text-muted">現在、予約中の書籍はありません。</p>
+				<a th:href="@{/books}" class="btn btn-outline-primary">書籍を探す</a>
+			</div>
+
+			<div th:each="res : ${reservations}"
+				th:if="${res.status == 'WAITING'}" class="card mb-3 shadow-sm">
+				<div class="card-body">
+					<div class="d-flex justify-content-between align-items-center">
+						<div>
+							<h5 th:text="${res.book.title}" class="fw-bold mb-1">書籍タイトル</h5>
+							<p class="mb-0 text-muted small">
+								<i class="bi bi-calendar-check"></i> 予約日: <span
+									th:text="${#temporals.format(res.reservationDate, 'yyyy-MM-dd HH:mm')}"></span>
+							</p>
+							<p class="mb-0 text-muted small">
+								<i class="bi bi-clock-history"></i> 有効期限: <span
+									th:text="${res.expiryDate != null ? #temporals.format(res.expiryDate, 'yyyy-MM-dd HH:mm') : '-'}"></span>
+							</p>
+						</div>
+
+						<form
+							th:action="@{/user/reservations/{id}/cancel(id=${res.reservationId})}"
+							method="post">
+							<button type="submit" class="btn btn-outline-danger"
+								onclick="return confirm('この予約をキャンセルしますか？');">
+								<i class="bi bi-x-circle"></i> キャンセル
+							</button>
+						</form>
+					</div>
+				</div>
+			</div>
+		</th:block>
+	</div>
+</th:block>
+
+<th:block layout:fragment="scripts">
+	<script th:inline="javascript">
+		
+	</script>
+</th:block>
+</html>

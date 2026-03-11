@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{layout/main}">
+<head>
+<title>統計 - LaughTale</title>
+</head>
+<th:block layout:fragment="content">
+	<h1 class="mb-4">
+		<i class="bi bi-graph-up"></i> 統計
+	</h1>
+	<div class="card mb-4">
+		<div class="card-body">
+			<canvas id="monthlyChart" height="100"></canvas>
+		</div>
+	</div>
+	<div class="card">
+		<div class="card-header">
+			<h5>月別統計</h5>
+		</div>
+		<div class="card-body" id="monthlyStats"></div>
+	</div>
+</th:block>
+<th:block layout:fragment="scripts">
+	<script th:inline="javascript">
+    $(function() {
+        // 서버에서 year가 안 넘어와도 에러 나지 않도록 기본값 2026 설정
+        const selectedYear = /*[[${year}]]*/ 2026;
+        
+        $.get('/api/admin/statistics/monthly?year=' + selectedYear)
+            .done(function(d) {
+                console.log("받아온 데이터:", d); // 브라우저 F12 콘솔에서 데이터 확인용
+
+                if (!d || d.length === 0) {
+                    $('#monthlyStats').html('<p class="text-center text-muted">統計データがありません。</p>');
+                    return;
+                }
+
+                // 차트 그리기
+                new Chart($('#monthlyChart'), {
+                    type: 'line',
+                    data: {
+                        // m.getMonth() (X) -> m.month (O)
+                        labels: d.map(m => (m.month || 0) + '月'), 
+                        datasets: [{
+                            label: '貸出件数',
+                            // m.getTotalRentals() (X) -> m.totalRentals (O)
+                            data: d.map(m => m.totalRentals || 0), 
+                            borderColor: '#6366f1',
+                            tension: 0.3,
+                            fill: true,
+                            backgroundColor: 'rgba(99, 102, 241, 0.1)'
+                        }]
+                    },
+                    options: {
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+
+                // 하단 텍스트 리스트 출력
+                const html = d.map(m => `
+                    <div class="d-flex justify-content-between border-bottom py-2">
+                        <span>${m.month || 0}月</span>
+                        <span class="fw-bold">${m.totalRentals || 0} 件</span>
+                    </div>
+                `).join('');
+                $('#monthlyStats').html(html);
+            })
+            .fail(function(xhr) {
+                console.error("API 호출 실패:", xhr);
+                $('#monthlyStats').html('<p class="text-center text-danger">데이터를 불러오는 데 실패했습니다.</p>');
+            });
+    });
+</script>
+</th:block>
+</html>

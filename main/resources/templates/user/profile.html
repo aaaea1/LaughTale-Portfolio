@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{layout/main}">
+<head>
+
+<meta name="_csrf" th:content="${_csrf.token}"/>
+<meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
+<title>会員情報編集 - LaughTale</title>
+</head>
+<th:block layout:fragment="content">
+	<h1 class="mb-4">
+		<i class="bi bi-person-circle"></i> 会員情報編集
+	</h1>
+	<div class="card">
+		<div class="card-body">
+			<form id="profileForm">
+				<div class="mb-3">
+					<label>お名前</label><input type="text" class="form-control" id="name"
+						required>
+				</div>
+				<div class="mb-3">
+					<label>新しいパスワード(変更する場合のみ入力)</label> <input type="password"
+						class="form-control" id="password">
+				</div>
+				<div class="mb-3">
+					<label>パスワード確認</label> <input type="password"
+						class="form-control" id="passwordConfirm">
+				</div>
+				<div class="mb-3">
+					<label>メールアドレス</label><input type="email" class="form-control"
+						id="email" required>
+				</div>
+				<div class="mb-3">
+					<label>電話番号</label><input type="tel" class="form-control"
+						id="phone">
+				</div>
+				<button type="submit" class="btn btn-primary">編集</button>
+			</form>
+		</div>
+	</div>
+</th:block>
+<th:block layout:fragment="scripts">
+
+<script>
+
+	$(function() {
+	    // 1. 데이터 불러오기
+	    $.get('/user/profile/data').done(d => { 
+	        $('#name').val(d.name); 
+	        $('#email').val(d.email); 
+	        $('#phone').val(d.phone); 
+	    });
+
+	    // 2. 수정 제출
+	    $('#profileForm').submit(e => { 
+	        e.preventDefault(); 
+
+	        // 비밀번호 확인 검사
+	        if ($('#password').val() !== $('#passwordConfirm').val()) {
+	            showToast('パスワードが一致しません。', 'error');
+	            return;
+	        }
+
+	        const token = $("meta[name='_csrf']").attr("content");
+	        const header = $("meta[name='_csrf_header']").attr("content");
+
+	        $.ajax({
+	            url: '/user/profile',
+	            type: 'POST',
+	            data: {
+	                name: $('#name').val(),
+	                email: $('#email').val(),
+	                phone: $('#phone').val(),
+	                password: $('#password').val() 
+	            },
+	            beforeSend: function(xhr) {
+	                if (token && header) xhr.setRequestHeader(header, token);
+	            },
+	            success: function(response) {
+	                showToast('変更しました。', 'success');
+	                setTimeout(() => location.href = '/user/profile', 1200); 
+	            },
+	            error: function(xhr) {
+	            	console.log(xhr.responseText);
+	                showToast('変更に失敗しました。: ' + xhr.responseText, 'error');
+	            }
+	        });
+	    });
+	});
+	
+</script>
+</th:block>
+</html>

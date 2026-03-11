@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{layout/main}">
+<head>
+<title>書籍一覧 - LaughTale</title>
+</head>
+
+<th:block layout:fragment="styles">
+	<style>
+.filter-section {
+	background: white;
+	border-radius: 15px;
+	padding: 1.5rem;
+	margin-bottom: 2rem;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.book-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+	gap: 1.5rem;
+}
+
+.genre-badge {
+	cursor: pointer;
+	transition: all 0.2s;
+	display: inline-block;
+	margin: 0.25rem;
+}
+
+.genre-badge:hover {
+	transform: scale(1.05);
+}
+
+.genre-badge.active {
+	background: var(--primary-color) !important;
+	color: white !important;
+}
+
+.availability-badge {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	z-index: 1;
+}
+
+.book-card-img-container {
+	position: relative;
+	overflow: hidden;
+}
+
+.book-card-img-container img {
+	transition: transform 0.3s;
+}
+
+.card:hover .book-card-img-container img {
+	transform: scale(1.05);
+}
+
+.empty-state {
+	text-align: center;
+	padding: 4rem 2rem;
+}
+
+.empty-state i {
+	font-size: 5rem;
+	color: #ddd;
+	margin-bottom: 1rem;
+}
+</style>
+</th:block>
+
+<th:block layout:fragment="content">
+	<div class="row mb-4">
+		<div class="col">
+			<h1 class="fw-bold animate__animated animate__fadeInDown">
+				<i class="bi bi-grid-3x3-gap me-2"></i>書籍一覧
+			</h1>
+		</div>
+	</div>
+
+	<!-- Search and Filter Section -->
+	<div class="filter-section animate__animated animate__fadeIn">
+		<div class="row g-3 mb-3">
+			<div class="col-md-6">
+				<div class="input-group">
+					<span class="input-group-text"> <i class="bi bi-search"></i>
+					</span> <input type="text" class="form-control" id="searchKeyword"
+						placeholder="タイトル・著者名で検索..." th:value="${keyword}">
+					<button class="btn btn-primary" type="button"
+						onclick="searchBooks()">
+						<i class="bi bi-search"></i> 検索
+					</button>
+				</div>
+			</div>
+			<div class="col-md-3">
+				<select class="form-select" id="genreFilter">
+					<option value="">すべてのジャンル</option>
+					<option th:each="g : ${genres}" th:value="${g}" th:text="${g}"
+						th:selected="${g == genre}"></option>
+				</select>
+			</div>
+			<div class="col-md-3">
+				<div class="d-grid gap-2 d-md-flex">
+					<button class="btn btn-outline-secondary flex-fill"
+						onclick="resetFilters()">
+						<i class="bi bi-arrow-counterclockwise"></i> リセット
+					</button>
+					<button class="btn btn-outline-primary flex-fill"
+						onclick="loadAvailableOnly()">
+						<i class="bi bi-check-circle"></i> 貸出可能のみ
+					</button>
+				</div>
+			</div>
+		</div>
+
+	<!-- Books Grid -->
+	<div id="booksContainer" class="book-grid mb-4">
+		<div th:each="book : ${books}" class="card h-100 shadow-sm"
+			data-book-item>
+			<div class="book-card-img-container">
+				<img th:src="${book.filePath}" class="card-img-top"
+					th:alt="${book.title}" style="height: 300px; object-fit: cover;">
+				<span class="badge availability-badge"
+					th:classappend="${book.availableCopies > 0} ? 'bg-success' : 'bg-danger'"
+					th:text="${book.availableCopies > 0} ? '貸出可能' : '貸出中'"></span>
+			</div>
+			<div class="card-body">
+				<h5 class="card-title text-truncate fw-bold" th:text="${book.title}">제목</h5>
+				<p class="card-text small text-muted mb-2" th:text="${book.author}">저자</p>
+				<a th:href="@{/books/detail(id=${book.bookId})}"
+					class="btn btn-sm btn-outline-primary w-100">詳細を見る</a>
+			</div>
+		</div>
+
+		<input type="hidden" id="totalPagesVal" th:value="${books.totalPages}"
+			data-total-pages> <input type="hidden" id="currentPageVal"
+			th:value="${books.number}" data-current-page>
+	</div>
+
+	<!-- Empty State -->
+	<div id="emptyState" class="empty-state" style="display: none;">
+		<i class="bi bi-inbox"></i>
+		<h3>検索結果がありません。</h3>
+		<p class="text-muted">別のキーワードやフィルターをお試しください。</p>
+		<button class="btn btn-primary" onclick="resetFilters()">
+			<i class="bi bi-arrow-counterclockwise"></i> すべての書籍を見る
+		</button>
+	</div>
+
+	<!-- Pagination -->
+	<nav id="paginationContainer"
+		class="d-flex justify-content-center mt-4">
+		<!-- Pagination will be loaded here -->
+	</nav>
+</th:block>
+
+<th:block layout:fragment="scripts">
+	<script>
+let currentPage = 0;
+let currentKeyword = /*[[${keyword}]]*/ '';
+let currentGenre = /*[[${genre}]]*/ '';
+
+$(document).ready(function() {
+    loadBooks(currentPage);
+    
+    // Enter key search
+    $('#searchKeyword').keypress(function(e) {
+        if (e.which === 13) {
+            searchBooks();
+        }
+    });
+    
+    // Genre filter change
+    $('#genreFilter').change(function() {
+        currentGenre = $(this).val();
+        currentPage = 0;
+        loadBooks(0);
+    });
+});
+
+// Load Books via AJAX
+function loadBooks(page) {
+    showLoading();
+    
+    $.ajax({
+        url: '/books',
+        method: 'GET',
+        data: {
+            page: page,
+            size: 12,
+            keyword: currentKeyword,
+            genre: currentGenre
+        },
+        success: function(response) {
+            // 1. 서버가 보내준 전체 HTML에서 data-book-item
+            const $html = $(response);
+            const $books = $html.find('[data-book-item]');
+            
+            // 2. 페이지 정보도 새로 읽어온다
+            const totalPages = parseInt($html.find('[data-total-pages]').val()) || 1;
+            const currentPageNum = parseInt($html.find('[data-current-page]').val()) || 0;
+            
+            // 3. 화면에 그리기
+            renderBooks($books);
+            renderPagination(currentPageNum, totalPages);
+            
+            hideLoading();
+        },
+        error: function() {
+            hideLoading();
+            showToast('書籍一覧の読み込みに失敗しました。', 'error');
+        }
+    });
+}
+
+// Render Books
+function renderBooks(books) {
+    const container = $('#booksContainer');
+    container.empty();
+    
+    if (books.length === 0) {
+        $('#emptyState').show();
+        $('#paginationContainer').hide();
+        return;
+    }
+    
+    $('#emptyState').hide();
+    $('#paginationContainer').show();
+    
+    books.each(function() {
+        container.append($(this).addClass('animate__animated animate__fadeIn'));
+    });
+}
+
+// Render Pagination
+function renderPagination(currentPageNum, totalPages) {
+    if (totalPages <= 1) {
+        $('#paginationContainer').empty();
+        return;
+    }
+    
+    let html = '<ul class="pagination">';
+    
+    // Previous
+    html += `<li class="page-item ${currentPageNum === 0 ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="changePage(${currentPageNum - 1}); return false;">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+             </li>`;
+    
+    // Pages
+    const startPage = Math.max(0, currentPageNum - 2);
+    const endPage = Math.min(totalPages - 1, currentPageNum + 2);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        html += `<li class="page-item ${i === currentPageNum ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="changePage(${i}); return false;">
+                        ${i + 1}
+                    </a>
+                 </li>`;
+    }
+    
+    // Next
+    html += `<li class="page-item ${currentPageNum === totalPages - 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="changePage(${currentPageNum + 1}); return false;">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+             </li>`;
+    
+    html += '</ul>';
+    $('#paginationContainer').html(html);
+}
+
+// Change Page
+function changePage(page) {
+    currentPage = page;
+    loadBooks(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Search Books
+function searchBooks() {
+    currentKeyword = $('#searchKeyword').val();
+    currentPage = 0;
+    loadBooks(0);
+}
+
+// Filter by Genre (quick filter)
+function filterByGenre(element) {
+    $('.genre-badge').removeClass('active');
+    $(element).addClass('active');
+    
+    currentGenre = $(element).data('genre');
+    $('#genreFilter').val(currentGenre);
+    currentPage = 0;
+    loadBooks(0);
+}
+
+// Reset Filters
+function resetFilters() {
+    currentKeyword = '';
+    currentGenre = '';
+    currentPage = 0;
+    
+    $('#searchKeyword').val('');
+    $('#genreFilter').val('');
+    $('.genre-badge').removeClass('active');
+    
+    loadBooks(0);
+}
+
+</script>
+</th:block>
+</html>

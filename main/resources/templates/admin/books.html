@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{layout/main}">
+<head>
+
+<meta name="_csrf" th:content="${_csrf.token}" />
+<meta name="_csrf_header" th:content="${_csrf.headerName}" />
+
+<title>書籍管理 - LaughTale</title>
+</head>
+<th:block layout:fragment="content">
+	<div class="d-flex justify-content-between mb-4">
+		<h1>
+			<i class="bi bi-book"></i> 書籍管理
+		</h1>
+		<a href="/admin/books/new" class="btn btn-primary"><i
+			class="bi bi-plus"></i> 新規書籍</a>
+	</div>
+	<div class="card">
+		<div class="card-body">
+			<table class="table">
+				<thead>
+					<tr>
+						<th>タイトル</th>
+						<th>著者名</th>
+						<th>ジャンル</th>
+						<th>在庫数</th>
+						<th>管理</th>
+					</tr>
+				</thead>
+				<tbody id="booksList">
+					<tr th:each="b : ${books}">
+						<td th:text="${b.title}"></td>
+						<td th:text="${b.author}"></td>
+						<td th:text="${b.genre}"></td>
+						<td th:text="${b.availableCopies + '/' + b.totalCopies}"></td>
+						<td><a th:href="@{/admin/books/{id}/edit(id=${b.bookId})}"
+							class="btn btn-sm btn-primary">編集</a>
+
+							<form th:action="@{/admin/books/{id}/delete(id=${b.bookId})}"
+								method="post" style="display: inline;"
+								onsubmit="return confirm('削除してもよろしいですか？');">
+								<button type="submit" class="btn btn-sm btn-danger">削除</button>
+							</form></td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+</th:block>
+<th:block layout:fragment="scripts">
+</th:block>
+</html>

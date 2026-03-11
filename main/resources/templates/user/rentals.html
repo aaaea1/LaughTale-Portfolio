@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{layout/main}">
+<head>
+
+<meta name="_csrf" th:content="${_csrf.token}"/>
+<meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
+<title>マイ貸出 - LaughTale</title>
+</head>
+<th:block layout:fragment="content">
+	<h1 class="mb-4">
+		<i class="bi bi-book"></i> マイ貸出一覧
+	</h1>
+
+	<div class="card mb-4">
+		<div class="card-header">
+			<h5 class="mb-0">現在貸出中</h5>
+		</div>
+		<div class="card-body">
+			<div th:if="${#lists.isEmpty(currentRentals)}"
+				class="text-center py-3">
+				<p class="text-muted">現在、貸出中の書籍はありません。</p>
+			</div>
+
+			<div th:each="rental : ${currentRentals}" class="card mb-2">
+				<div class="card-body">
+					<h6 th:text="${rental.book.title}" class="fw-bold"></h6>
+					<p class="mb-2 text-muted">
+						返却期限: <span
+							th:text="${#temporals.format(rental.dueDate, 'yyyy-MM-dd HH:mm')}"></span>
+					</p>
+
+					<button class="btn btn-sm btn-success"
+						th:onclick="returnBook([[${rental.rentalId}]])">返却</button>
+					<button class="btn btn-sm btn-primary"
+						th:onclick="extendRental([[${rental.rentalId}]])">延長</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="card">
+		<div class="card-header">
+			<h5 class="mb-0">貸出履歴</h5>
+		</div>
+		<div class="card-body">
+			<table class="table">
+				<thead>
+					<tr>
+						<th>書籍名</th>
+						<th>貸出日</th>
+						<th>返却日</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr th:each="history : ${rentalHistory}">
+						<td th:text="${history.book.title}">タイトル</td>
+						<td
+							th:text="${#temporals.format(history.rentalDate, 'yyyy-MM-dd')}"></td>
+						<td
+							th:text="${history.returnDate != null ? #temporals.format(history.returnDate, 'yyyy-MM-dd') : '未返却'}"></td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
+</th:block>
+<th:block layout:fragment="scripts">
+	<script th:inline="javascript">
+function returnBook(id) {
+    if(!confirm('返却しますか？')) return;
+    
+    const token = $("meta[name='_csrf']").attr("content");
+    const header = $("meta[name='_csrf_header']").attr("content");
+
+    $.ajax({
+        url: '/api/rentals/' + id + '/return',
+        method: 'POST',
+        beforeSend: function(xhr) {
+            if (header && token) xhr.setRequestHeader(header, token);
+        },
+        success: function() {
+            showToast('返却が完了しました。', 'success');
+            setTimeout(() => location.reload(), 1200);
+        },
+        error: function(xhr) {
+            showToast(xhr.responseJSON ? xhr.responseJSON.message : '処理中にエラーが発生しました。', 'error');
+        }
+    });
+}
+
+function extendRental(id) {
+    if(!confirm('貸出期間を延長しますか？')) return;
+    
+    const token = $("meta[name='_csrf']").attr("content");
+    const header = $("meta[name='_csrf_header']").attr("content");
+
+    $.ajax({
+        url: '/api/rentals/' + id + '/extend',
+        method: 'POST',
+        beforeSend: function(xhr) {
+            if (header && token) xhr.setRequestHeader(header, token);
+        },
+        success: function() {
+            showToast('延長が完了しました。', 'success');
+            setTimeout(() => location.reload(), 1200);
+        },
+        error: function(xhr) {
+            showToast(xhr.responseJSON ? xhr.responseJSON.message : '延長できません。', 'error');
+        }
+    });
+}
+</script>
+</th:block>
+</html>
